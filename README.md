@@ -1,6 +1,6 @@
 # trashcan irc bot
 
-_A simple, extendable IRC bot. Written in Python.
+A simple, extendable IRC bot. Written in Python.
 
 ---
 
