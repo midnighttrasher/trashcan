@@ -1,0 +1,6 @@
+HOST=irc-server.example.com
+PORT=6697
+CHANNEL=#channel
+NICK=trashcan_
+PW=PASSSWORD
+FUNCS=ping,help
