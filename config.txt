@@ -1,0 +1,8 @@
+HOST=irc.hackint.org
+PORT=6697
+CHANNEL=#channel
+NICK=trashcan_
+PW=PASSWORD
+FUNCS=ping,help
+JOBS=settopic,3600;rallo,1337;
+NOTIFY=tg,mail
