@@ -24,8 +24,6 @@
 #UUUUJCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
 #UJCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
 
-# I made my code a little more simple in order to make it easier to maintain
-
 import socket
 import ssl
 import importlib
@@ -43,14 +41,15 @@ sock = None
 FUNCS = []
 NOTIFY = []
 JOBS = []
+JOINER = []
 
-# Callables
 modules = {}
 notifier = {}
 handlers = {}
+joiner = {}
 
 def fetch():
-    global HOST, PORT, CHAN, USER, PW, FUNCS, JOBS, NOTIFY
+    global HOST, PORT, CHAN, USER, PW, FUNCS, JOBS, NOTIFY, JOINER
     with open("config.txt", "r") as f:
         line = f.readlines()
         HOST = line[0].strip().split("=")[1]
@@ -61,13 +60,14 @@ def fetch():
         FUNCS = [x.strip() for x in line[5].strip().split("=")[1].split(",")]
         JOBS = [x.strip() for x in line[6].strip().split("=")[1].split(";") if x.strip()]
         NOTIFY = [x.strip() for x in line[7].strip().split("=")[1].split(",")]
+        JOINER = [x.strip() for x in line[8].strip().split("=")[1].split(",")]
 
 
 def send_message(target, msg):
     sock.send(f"PRIVMSG {target} :{msg}\r\n".encode())
 
 def registerPlugins(folder, arr, args=None):
-    global handlers, JOBS, NOTIFY, modules, notifier
+    global handlers, JOBS, NOTIFY, modules, notifier, JOINER, joiner
     for name in arr:
         try:
             if args == 'jobs':
@@ -80,6 +80,10 @@ def registerPlugins(folder, arr, args=None):
             if args == 'notify':
                 notify = importlib.import_module(f"{folder}.{name.split(',')[0]}")
                 notifier[name] = notify.handle
+                continue
+            if args == 'joiner':
+                join = importlib.import_module(f"{folder}.{name.split(',')[0]}")
+                joiner[name] = join.handle
                 continue
             else:
                 mod = importlib.import_module(f"{folder}.{name}")
@@ -105,6 +109,15 @@ def start_jobs():
         t.start()
 
 def process_message(data):
+    if " JOIN " in data:
+        prefix = data.split("!")[0][1:]
+        user = prefix
+        channel = data.split(" JOIN ")[1].strip()
+        for j in joiner.values():
+            j(bot=__import__(__name__), user=user, channel=channel)
+        return
+
+
     if "PRIVMSG" not in data or " :" not in data:
         return
     prefix, msg = data.split(" :", 1)
@@ -161,9 +174,9 @@ def init():
     registerPlugins('funcs', FUNCS)
     registerPlugins('jobs', JOBS, 'jobs')
     registerPlugins('notify', NOTIFY, 'notify')
+    registerPlugins('joiner', JOINER, 'joiner')
 
     start_jobs()
-
     connect()
 
 if __name__ == "__main__":
